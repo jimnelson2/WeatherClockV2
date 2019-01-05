@@ -13,13 +13,16 @@ import (
 	"syscall"
 )
 
-type runtimeConfig struct {
+// RuntimeConfig will get cleaned up once we settle on context
+type RuntimeConfig struct {
 	DarkskyToken string
+	Latitude     float64
+	Longitude    float64
 }
 
 func main() {
 
-	var rc runtimeConfig
+	var rc RuntimeConfig
 	{
 		viper.SetEnvPrefix("WC")
 		viper.AutomaticEnv()
@@ -27,8 +30,19 @@ func main() {
 		// repeat something like this for each config var
 		rc.DarkskyToken = viper.GetString("DARKSKY_TOKEN")
 		if !viper.IsSet("DARKSKY_TOKEN") {
-			fmt.Printf("MISSING DARKSKY_TOKEN\n")
+			panic("MISSING DARKSKY_TOKEN\n")
 		}
+
+		rc.Latitude = viper.GetFloat64("LATITUDE")
+		if !viper.IsSet("LATITUDE") {
+			panic("MISSING LATITUDE\n")
+		}
+
+		rc.Longitude = viper.GetFloat64("LONGITUDE")
+		if !viper.IsSet("LONGITUDE") {
+			panic("MISSING LONGITUDE\n")
+		}
+
 	}
 
 	// play nice and try to exit when asked by the system
@@ -40,6 +54,6 @@ func main() {
 	}()
 
 	// do stuff
-	fmt.Printf("%s\n", rc.DarkskyToken)
-	darksky.Tinker()
+	darksky.Tinker(rc.DarkskyToken, rc.Latitude, rc.Longitude)
+
 }

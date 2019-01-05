@@ -2,20 +2,20 @@ package darksky
 
 import (
 	"fmt"
+
 	"github.com/shawntoffel/darksky"
 )
 
 // Tinker is me just tinkering
-func Tinker() {
-	client := darksky.New("api key")
+func Tinker(token string, latitude float64, longitude float64) {
+	client := darksky.New(token)
 	request := darksky.ForecastRequest{}
-	request.Latitude = 40.7128
-	request.Longitude = -74.0059
-	request.Options = darksky.ForecastRequestOptions{Exclude: "hourly,minutely"}
+	request.Latitude = darksky.Measurement(latitude)
+	request.Longitude = darksky.Measurement(longitude)
 	forecast, err := client.Forecast(request)
 	if err != nil {
 		fmt.Println(err.Error())
 		return
 	}
-	fmt.Println(forecast.Currently.Temperature)
+	fmt.Println(forecast.Minutely.Data[0].PrecipType)
 }
