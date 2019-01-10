@@ -1,4 +1,4 @@
-package darksky
+package forecast
 
 import (
 	"fmt"
@@ -16,7 +16,7 @@ type Job struct {
 }
 
 // Run implements the gron.Job interface
-func (dsc Job) Run() {
+func (dsc Job) Run(c chan darksky.ForecastResponse) {
 	fmt.Println("start darksky at ", time.Now().Format("2006-01-02 15:04:05.000000"))
 	client := darksky.New(dsc.DarkskyToken)
 	request := darksky.ForecastRequest{}
@@ -27,6 +27,6 @@ func (dsc Job) Run() {
 		fmt.Println(err.Error())
 		return
 	}
-	fmt.Println("next minute precip type: ", forecast.Minutely.Data[0].PrecipType)
+	c <- forecast
 	fmt.Println("finish darksky at ", time.Now().Format("2006-01-02 15:04:05.000000"))
 }
