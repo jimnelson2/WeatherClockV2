@@ -58,6 +58,10 @@ func main() {
 	displayChannel := make(chan display.Minutes)
 	go display.Run(displayChannel)
 
+	//pulseChannel := make(chan display.Color)
+	//var pulseColor display.Color
+	//go display.Pulse(pulseChannel, pulseColor.Red())
+
 	go func() {
 		for {
 			select {
@@ -67,13 +71,25 @@ func main() {
 				log.Debug(cs)
 				m := display.Minutes{Colors: cs, PixelCount: 60}
 				displayChannel <- m
+				//case msg2 := <-pulseChannel:
+				//	cs := allSameColors(msg2)
+				//	log.Debug(cs)
+				//	//m := display.Minutes{Colors: cs, PixelCount: 60}
+				//	//displayChannel <- m
 			}
-
 		}
 	}()
 
 	var input string
 	fmt.Scanln(&input)
+}
+
+func allSameColors(c display.Color) []display.Color {
+	cs := make([]display.Color, 60)
+	for i := 0; i < 60; i++ {
+		cs[i] = c
+	}
+	return cs
 }
 
 func testColors() []display.Color {

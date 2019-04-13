@@ -40,25 +40,26 @@ func Run(c chan Minutes) {
 		case m = <-c:
 			log.Debug("Display got new message to process")
 		default:
-			msg := opc.NewMessage(0)
-			// reminder each LED has 3 pixels, in r-g-b order
-			msg.SetLength(180) // TODO: hard-coded
+		}
 
-			// TODO: hard-coded
-			for i := 0; i < 60; i++ {
-				msg.SetPixelColor(i, m.Colors[i].R, m.Colors[i].G, m.Colors[i].B)
-			}
+		msg := opc.NewMessage(0)
+		// reminder each LED has 3 pixels, in r-g-b order
+		msg.SetLength(180) // TODO: hard-coded
 
-			err = oc.Send(msg)
-			if err != nil {
-				log.Error("couldn't send color data to fadecandy board", err)
-			} else {
-				log.Debug("sent color to fadecandy board")
-			}
+		// TODO: hard-coded
+		for i := 0; i < 60; i++ {
+			msg.SetPixelColor(i, m.Colors[i].R, m.Colors[i].G, m.Colors[i].B)
+		}
+
+		err = oc.Send(msg)
+		if err != nil {
+			log.Error("couldn't send color data to fadecandy board", err)
+		} else {
+			log.Debug("sent color to fadecandy board")
 		}
 
 		// TODO: hard-coded
-		time.Sleep(time.Duration(1000) * time.Millisecond)
+		time.Sleep(time.Duration(100) * time.Millisecond)
 	}
 
 }
