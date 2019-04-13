@@ -39,8 +39,10 @@ func Run(c chan Minutes) {
 		select {
 		case m = <-c:
 			log.Debug("Display got new message to process")
+		default:
 			msg := opc.NewMessage(0)
-			msg.SetLength(60) // TODO: hard-coded
+			// reminder each LED has 3 pixels, in r-g-b order
+			msg.SetLength(180) // TODO: hard-coded
 
 			// TODO: hard-coded
 			for i := 0; i < 60; i++ {
@@ -53,12 +55,10 @@ func Run(c chan Minutes) {
 			} else {
 				log.Debug("sent color to fadecandy board")
 			}
-
-		default:
 		}
 
 		// TODO: hard-coded
-		time.Sleep(time.Duration(100) * time.Millisecond)
+		time.Sleep(time.Duration(1000) * time.Millisecond)
 	}
 
 }

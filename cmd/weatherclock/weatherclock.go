@@ -63,10 +63,7 @@ func main() {
 			select {
 			case msg1 := <-darkskyChannel:
 				cs := colors(msg1)
-				cs = on50()
-				//for idx, c := range cs {
-				//	fmt.Printf("%d, %+v\n", idx, c)
-				//	}
+				cs = testColors()
 				log.Debug(cs)
 				m := display.Minutes{Colors: cs, PixelCount: 60}
 				displayChannel <- m
@@ -79,11 +76,18 @@ func main() {
 	fmt.Scanln(&input)
 }
 
-func on50() []display.Color {
+func testColors() []display.Color {
 	cs := make([]display.Color, 60)
+	var c display.Color
 	for i := 0; i < 60; i++ {
 		cs[i] = display.Color{R: 127, G: 127, B: 127}
 	}
+
+	cs[0] = c.Green()
+	cs[1] = c.Yellow()
+	cs[2] = c.Orange()
+	cs[3] = c.Red()
+	cs[4] = c.Purple()
 	return cs
 
 }
