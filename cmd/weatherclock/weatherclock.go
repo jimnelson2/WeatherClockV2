@@ -12,7 +12,6 @@ import (
 func main() {
 
 	var dsc forecast.Job
-	//var darkskyPollSec int
 	{
 		viper.SetEnvPrefix("WC")
 		viper.AutomaticEnv()
@@ -32,32 +31,54 @@ func main() {
 			panic("MISSING LONGITUDE\n")
 		}
 
-		//darkskyPollSec := viper.GetInt("DARKSKY_POLL_SEC")
-		//if !viper.IsSet("DARKSKY_POLL_SEC") {
-		//	panic("MISSING DARKSKY_POLL_SEC\n")
-		//}
-		//if darkskyPollSec < 87 { //TODO make a class constant
-		//	panic("DARKSKY_POLL_SEC less than 87 will exceed api terms for free use of 1000 calls per day\n")
-		//}
+		dsc.PollIntervalSec = viper.GetInt("DARKSKY_POLL_SEC")
+		if !viper.IsSet("DARKSKY_POLL_SEC") {
+			panic("MISSING DARKSKY_POLL_SEC\n")
+		}
+		if dsc.PollIntervalSec < 87 { //TODO make a class constant
+			panic("DARKSKY_POLL_SEC less than 87 will exceed api terms for free use of 1000 calls per day\n")
+		}
 	}
 
 	// call darksky on an interval, forever
-	//scheduler.Every(darkskyPollSec).Seconds().Run(dsc.Run)
 	darkskyChannel := make(chan darksky.ForecastResponse)
 	go dsc.Run(darkskyChannel)
 
-	f := <-darkskyChannel
-	cs := colors(f)
-	for idx, c := range cs {
-		fmt.Printf("%d, %+v\n", idx, c)
-	}
+	go func() {
+		for {
+			select {
+			case msg1 := <-darkskyChannel:
+				cs := colors(msg1)
+				for idx, c := range cs {
+					fmt.Printf("%d, %+v\n", idx, c)
+				}
 
+			}
+		}
+	}()
+
+	var input string
+	fmt.Scanln(&input)
+}
+
+func pulse(c Color) {
+	// not entirely sure...
+	// I'm imagining the pixel ring will pulse/throb
+	// from the provided color to dark.
+	// not sure how i want that to work with displayed precip
+	// literally can't imagine it...prob need hardware
+	// to see options in action
 }
 
 // Color holds a pixel color
 type Color struct {
 	R, G, B uint8
 }
+
+// like...way beyond first try...
+// could imagine these cutoffs being changeable via
+// front-end sliders. yeah we have no front end yet.
+// but if we did how cool would that be
 
 // expecting that intensity-to-color mapping will vary by precip type
 // intensity is inches of liquid water per hour
