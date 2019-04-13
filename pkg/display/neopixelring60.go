@@ -1,37 +1,18 @@
 package display
 
 import (
-	"log"
-
 	"time"
 
 	"github.com/kellydunn/go-opc"
+	log "github.com/sirupsen/logrus"
 )
 
-type Color struct {
-	R, G, B uint8
-}
-
 type Minutes struct {
-	Colors     [60]Color
+	Colors     []Color
 	PixelCount int
 }
 
 func Run(c chan Minutes) {
-
-	var minutes Minutes
-
-	// TODO: is this necessary?
-	// TODO: hard-coded
-	for i := 0; i < 60; i++ {
-		minutes.Colors[i] = Color{R: 0, G: 0, B: 0}
-	}
-
-	// receive from channel
-	select {
-	case minutes = <-c:
-	default:
-	}
 
 	// Create a client
 	oc := opc.NewClient()
@@ -45,20 +26,35 @@ func Run(c chan Minutes) {
 		log.Fatal("Could not connect to Fadecandy server", err)
 	}
 
+	m := Minutes{Colors: make([]Color, 60), PixelCount: 60}
+
+	// TODO: is this necessary?
+	// TODO: hard-coded
+	for i := 0; i < 60; i++ {
+		m.Colors[i] = Color{R: 0, G: 0, B: 0}
+	}
+
 	for {
-		m := opc.NewMessage(0)
-		m.SetLength(60) // TODO: hard-coded
+		// receive from channel
+		select {
+		case m = <-c:
+			log.Debug("Display got new message to process")
+			msg := opc.NewMessage(0)
+			msg.SetLength(60) // TODO: hard-coded
 
-		// TODO: hard-coded
-		for i := 0; i < 60; i++ {
-			m.SetPixelColor(i, minutes.Colors[i].R, minutes.Colors[i].G, minutes.Colors[i].B)
-		}
+			// TODO: hard-coded
+			for i := 0; i < 60; i++ {
+				msg.SetPixelColor(i, m.Colors[i].R, m.Colors[i].G, m.Colors[i].B)
+			}
 
-		err = oc.Send(m)
-		if err != nil {
-			log.Println("couldn't send color", err)
-		} else {
-			log.Println("send color")
+			err = oc.Send(msg)
+			if err != nil {
+				log.Error("couldn't send color data to fadecandy board", err)
+			} else {
+				log.Debug("sent color to fadecandy board")
+			}
+
+		default:
 		}
 
 		// TODO: hard-coded
