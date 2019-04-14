@@ -38,7 +38,7 @@ func Run(c chan Minutes) {
 		// receive from channel
 		select {
 		case m = <-c:
-			log.Debug("Display got new message to process")
+			//log.Debug("Display got new message to process")
 		default:
 		}
 

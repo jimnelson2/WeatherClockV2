@@ -58,32 +58,69 @@ func main() {
 	displayChannel := make(chan display.Minutes)
 	go display.Run(displayChannel)
 
-	//pulseChannel := make(chan display.Color)
-	//var pulseColor display.Color
-	//go display.Pulse(pulseChannel, pulseColor.Red())
+	pulseChannel := make(chan display.Color)
+	var pulseColor display.Color
+	go display.Pulse(pulseChannel, pulseColor.Red())
 
 	go func() {
+		var finalColors, lastForecastColors, lastAlertColors []display.Color
 		for {
 			select {
 			case msg1 := <-darkskyChannel:
-				cs := colors(msg1)
+				cs1 := colors(msg1)
 				//cs = testColors()
-				cs = dim(cs, 0.5)
-				log.Debug(cs)
-				traceMapping(msg1, cs)
-				m := display.Minutes{Colors: cs, PixelCount: 60}
+				log.Debug(cs1)
+				traceMapping(msg1, cs1)
+				lastForecastColors = cs1
+				//m := display.Minutes{Colors: cs, PixelCount: 60}
+				//displayChannel <- m
+			case msg2 := <-pulseChannel:
+				cs2 := allSameColors(msg2)
+				lastAlertColors = cs2
+				//m := display.Minutes{Colors: cs, PixelCount: 60}
+				//displayChannel <- m
+			}
+			if len(lastForecastColors) > 0 && len(lastAlertColors) > 0 {
+				finalColors = overlayColors(lastForecastColors, lastAlertColors)
+				finalColors = dim(finalColors, 0.5)
+				m := display.Minutes{Colors: finalColors, PixelCount: 60}
 				displayChannel <- m
-				//case msg2 := <-pulseChannel:
-				//	cs := allSameColors(msg2)
-				//	log.Debug(cs)
-				//	//m := display.Minutes{Colors: cs, PixelCount: 60}
-				//	//displayChannel <- m
 			}
 		}
 	}()
 
 	var input string
 	fmt.Scanln(&input)
+}
+
+func overlayColors(fc []display.Color, ac []display.Color) []display.Color {
+
+	// not really sure what I want to see. For now...we're just gonna add 'em up
+	cs := make([]display.Color, 60)
+	var r, g, b uint
+	for i := 0; i < 60; i++ {
+
+		r = uint(fc[i].R + ac[i].R)
+		g = uint(fc[i].G + ac[i].G)
+		b = uint(fc[i].B + ac[i].B)
+
+		if r > 255 {
+			r = 255
+		}
+		if g > 255 {
+			g = 255
+		}
+		if b > 255 {
+			b = 255
+		}
+
+		cs[i].R = uint8(r)
+		cs[i].G = uint8(g)
+		cs[i].B = uint8(b)
+	}
+
+	//return cs  ignore what we're doing here for now
+	return fc
 }
 
 func allSameColors(c display.Color) []display.Color {
@@ -98,7 +135,7 @@ func testColors() []display.Color {
 	cs := make([]display.Color, 60)
 	var c display.Color
 	for i := 0; i < 60; i++ {
-		cs[i] = display.Color{R: 127, G: 127, B: 127}
+		cs[i] = display.Color{R: 0, G: 0, B: 0}
 	}
 
 	cs[0] = c.Green()
@@ -205,7 +242,7 @@ func snow(intensity float64) display.Color {
 func traceMapping(f darksky.ForecastResponse, cs []display.Color) {
 
 	for i := 0; i < 60; i++ {
-		log.Tracef("%s %f - %d %d %d", f.Minutely.Data[i].PrecipType, f.Minutely.Data[i].PrecipIntensity,
+		log.Tracef("%s i:%f p:%f- %d %d %d", f.Minutely.Data[i].PrecipType, f.Minutely.Data[i].PrecipIntensity, f.Minutely.Data[i].PrecipProbability,
 			cs[i].R, cs[i].G, cs[i].B)
 	}
 }
