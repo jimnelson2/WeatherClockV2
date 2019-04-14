@@ -14,24 +14,44 @@ import (
 
 func main() {
 
-	//	var log = logrus.New()
+	// setup runtime variable source
 	{
-		log.SetOutput(os.Stdout)
-		log.SetLevel(log.TraceLevel)
+		if os.Getenv("ENVIRONMENT") == "LOCAL" {
+			viper.AutomaticEnv()
+			viper.SetEnvPrefix("WC")
+		} else {
+			viper.SetConfigName("wc") // viper is weird, doesn't want a file extension, it'll "figure it out"
+			viper.AddConfigPath("/etc/default/")
+			err := viper.ReadInConfig()
+			if err != nil {
+				log.Fatalf("Fatal error config file: %s \n", err)
+			}
+		}
 	}
 
-	log.Info("Getting runtime variables")
+	// setup logging
+	{
+		log.SetOutput(os.Stdout)
+		logLevel := viper.GetString("LOG_LEVEL")
+		switch logLevel {
+		case "TRACE":
+			log.SetLevel(log.TraceLevel)
+		case "DEBUG":
+			log.SetLevel(log.DebugLevel)
+		case "INFO":
+			log.SetLevel(log.InfoLevel)
+		case "ERROR":
+			log.SetLevel(log.ErrorLevel)
+		case "FATAL":
+			log.SetLevel(log.FatalLevel)
+		default:
+			log.SetLevel(log.DebugLevel)
+		}
+	}
+
+	// setup darksky channel
 	var dsc forecast.Job
 	{
-		//viper.SetConfigName("config")
-		viper.SetEnvPrefix("WC")
-		viper.AutomaticEnv()
-
-		//viper.AddConfigPath(".")
-		//err := viper.ReadInConfig() // Find and read the config file
-		//if err != nil {             // Handle errors reading the config file
-		//	panic(fmt.Errorf("Fatal error config file: %s \n", err))
-		//}
 
 		dsc.DarkskyToken = viper.GetString("DARKSKY_TOKEN")
 		if !viper.IsSet("DARKSKY_TOKEN") {
@@ -59,7 +79,6 @@ func main() {
 	}
 	log.Info("Got runtime variables")
 
-	// call darksky on an interval, forever
 	darkskyChannel := make(chan darksky.ForecastResponse)
 	go dsc.Run(darkskyChannel)
 
@@ -70,6 +89,7 @@ func main() {
 	var pulseColor display.Color
 	go display.Pulse(pulseChannel, pulseColor.Red())
 
+	// loop forever, passing data between channels as it arrives
 	go func() {
 		var finalColors, lastForecastColors, lastAlertColors []display.Color
 		for {
@@ -97,12 +117,12 @@ func main() {
 		}
 	}()
 
-	// Block until a signal is received. Bassically, run forever
+	// Block until a signal is received. Basically, run forever
 	// until the OS tells us to step
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 	s := <-c
-	log.Infof("Got signal:", s)
+	log.Infof("Got signal %v", s)
 
 }
 

@@ -1,0 +1,11 @@
+[Unit]
+Description=Weatherclock
+After=fcserver.service
+
+[Service]
+Type=simple
+ExecStart=/usr/weatherclock/wc-pi
+User=root
+
+[Install]
+WantedBy=multi-user.target

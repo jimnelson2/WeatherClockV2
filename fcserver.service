@@ -1,0 +1,11 @@
+[Unit]
+Description=FCServer
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/weatherclock/fcserver-rpi
+User=root
+
+[Install]
+WantedBy=multi-user.target
