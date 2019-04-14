@@ -14,3 +14,6 @@
 # VSCode
 debug
 .vscode
+
+# Config files and binaries
+config.json

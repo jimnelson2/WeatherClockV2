@@ -1,8 +1,9 @@
 package main
 
 import (
-	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/jimnelson2/WeatherClockV2/pkg/display"
 	"github.com/jimnelson2/WeatherClockV2/pkg/forecast"
@@ -22,8 +23,15 @@ func main() {
 	log.Info("Getting runtime variables")
 	var dsc forecast.Job
 	{
+		//viper.SetConfigName("config")
 		viper.SetEnvPrefix("WC")
 		viper.AutomaticEnv()
+
+		//viper.AddConfigPath(".")
+		//err := viper.ReadInConfig() // Find and read the config file
+		//if err != nil {             // Handle errors reading the config file
+		//	panic(fmt.Errorf("Fatal error config file: %s \n", err))
+		//}
 
 		dsc.DarkskyToken = viper.GetString("DARKSKY_TOKEN")
 		if !viper.IsSet("DARKSKY_TOKEN") {
@@ -82,15 +90,20 @@ func main() {
 			}
 			if len(lastForecastColors) > 0 && len(lastAlertColors) > 0 {
 				finalColors = overlayColors(lastForecastColors, lastAlertColors)
-				finalColors = dim(finalColors, 0.5)
+				finalColors = dim(finalColors, 0.3)
 				m := display.Minutes{Colors: finalColors, PixelCount: 60}
 				displayChannel <- m
 			}
 		}
 	}()
 
-	var input string
-	fmt.Scanln(&input)
+	// Block until a signal is received. Bassically, run forever
+	// until the OS tells us to step
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
+	s := <-c
+	log.Infof("Got signal:", s)
+
 }
 
 func overlayColors(fc []display.Color, ac []display.Color) []display.Color {
