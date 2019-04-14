@@ -16,7 +16,7 @@ func main() {
 	//	var log = logrus.New()
 	{
 		log.SetOutput(os.Stdout)
-		log.SetLevel(log.DebugLevel)
+		log.SetLevel(log.TraceLevel)
 	}
 
 	log.Info("Getting runtime variables")
@@ -67,8 +67,10 @@ func main() {
 			select {
 			case msg1 := <-darkskyChannel:
 				cs := colors(msg1)
-				cs = testColors()
+				//cs = testColors()
+				cs = dim(cs, 0.5)
 				log.Debug(cs)
+				traceMapping(msg1, cs)
 				m := display.Minutes{Colors: cs, PixelCount: 60}
 				displayChannel <- m
 				//case msg2 := <-pulseChannel:
@@ -106,15 +108,6 @@ func testColors() []display.Color {
 	cs[4] = c.Purple()
 	return cs
 
-}
-
-func pulse(c display.Color) {
-	// not entirely sure...
-	// I'm imagining the pixel ring will pulse/throb
-	// from the provided color to dark.
-	// not sure how i want that to work with displayed precip
-	// literally can't imagine it...prob need hardware
-	// to see options in action
 }
 
 // like...way beyond first try...
@@ -209,6 +202,29 @@ func snow(intensity float64) display.Color {
 
 }
 
+func traceMapping(f darksky.ForecastResponse, cs []display.Color) {
+
+	for i := 0; i < 60; i++ {
+		log.Tracef("%s %f - %d %d %d", f.Minutely.Data[i].PrecipType, f.Minutely.Data[i].PrecipIntensity,
+			cs[i].R, cs[i].G, cs[i].B)
+	}
+}
+
+func dim(c []display.Color, dimVal float32) []display.Color {
+
+	colors := make([]display.Color, 60)
+
+	for i := 0; i < 60; i++ {
+
+		r := uint8(float32(c[i].R) * dimVal)
+		g := uint8(float32(c[i].G) * dimVal)
+		b := uint8(float32(c[i].B) * dimVal)
+
+		colors[i] = display.Color{R: r, G: g, B: b}
+	}
+	return colors
+}
+
 // colors maps the forecast to colors
 func colors(f darksky.ForecastResponse) []display.Color {
 
@@ -218,7 +234,7 @@ func colors(f darksky.ForecastResponse) []display.Color {
 	// happy path first, but be aware...we cannot trust any data element(s) will be present at
 	// any point in time or the forecast
 	// we also might want to consider including probability in here?
-	fmt.Printf("data points: %d\n", len(f.Minutely.Data))
+	var c display.Color
 	for idx, m := range f.Minutely.Data {
 		switch m.PrecipType {
 		case "rain":
@@ -235,7 +251,6 @@ func colors(f darksky.ForecastResponse) []display.Color {
 			}
 		default:
 			{
-				var c display.Color
 				colors[idx] = c.Black()
 			}
 		}

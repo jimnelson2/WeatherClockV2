@@ -48,6 +48,7 @@ func Run(c chan Minutes) {
 
 		// TODO: hard-coded
 		for i := 0; i < 60; i++ {
+			// reminder this is effetively seeting three pixel values at once
 			msg.SetPixelColor(i, m.Colors[i].R, m.Colors[i].G, m.Colors[i].B)
 		}
 
@@ -55,7 +56,7 @@ func Run(c chan Minutes) {
 		if err != nil {
 			log.Error("couldn't send color data to fadecandy board", err)
 		} else {
-			log.Debug("sent color to fadecandy board")
+			//log.Debug("sent color to fadecandy board")
 		}
 
 		// TODO: hard-coded
