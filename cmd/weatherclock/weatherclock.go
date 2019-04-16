@@ -5,6 +5,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/jimnelson2/WeatherClockV2/pkg/color"
 	"github.com/jimnelson2/WeatherClockV2/pkg/display"
 	"github.com/jimnelson2/WeatherClockV2/pkg/forecast"
 	"github.com/shawntoffel/darksky"
@@ -49,10 +50,9 @@ func main() {
 		}
 	}
 
-	// setup darksky channel
-	var dsc forecast.Job
+	// gather darksky configuration
+	var dsc forecast.DarkskyConfig
 	{
-
 		dsc.DarkskyToken = viper.GetString("DARKSKY_TOKEN")
 		if !viper.IsSet("DARKSKY_TOKEN") {
 			log.Fatal("MISSING DARKSKY_TOKEN")
@@ -80,18 +80,17 @@ func main() {
 	log.Info("Got runtime variables")
 
 	darkskyChannel := make(chan darksky.ForecastResponse)
-	go dsc.Run(darkskyChannel)
+	go forecast.Run(darkskyChannel, dsc)
 
 	displayChannel := make(chan display.Minutes)
 	go display.Run(displayChannel)
 
-	pulseChannel := make(chan display.Color)
-	var pulseColor display.Color
-	go display.Pulse(pulseChannel, pulseColor.Red())
+	pulseChannel := make(chan color.WCColor)
+	go display.Pulse(pulseChannel, color.Red)
 
 	// loop forever, passing data between channels as it arrives
 	go func() {
-		var finalColors, lastForecastColors, lastAlertColors []display.Color
+		var finalColors, lastForecastColors, lastAlertColors []color.WCColor
 		for {
 			select {
 			case msg1 := <-darkskyChannel:
@@ -126,10 +125,10 @@ func main() {
 
 }
 
-func overlayColors(fc []display.Color, ac []display.Color) []display.Color {
+func overlayColors(fc []color.WCColor, ac []color.WCColor) []color.WCColor {
 
 	// not really sure what I want to see. For now...we're just gonna add 'em up
-	cs := make([]display.Color, 60)
+	cs := make([]color.WCColor, 60)
 	var r, g, b uint
 	for i := 0; i < 60; i++ {
 
@@ -156,26 +155,25 @@ func overlayColors(fc []display.Color, ac []display.Color) []display.Color {
 	return fc
 }
 
-func allSameColors(c display.Color) []display.Color {
-	cs := make([]display.Color, 60)
+func allSameColors(c color.WCColor) []color.WCColor {
+	cs := make([]color.WCColor, 60)
 	for i := 0; i < 60; i++ {
 		cs[i] = c
 	}
 	return cs
 }
 
-func testColors() []display.Color {
-	cs := make([]display.Color, 60)
-	var c display.Color
+func testColors() []color.WCColor {
+	cs := make([]color.WCColor, 60)
 	for i := 0; i < 60; i++ {
-		cs[i] = display.Color{R: 0, G: 0, B: 0}
+		cs[i] = color.Black
 	}
 
-	cs[0] = c.Green()
-	cs[1] = c.Yellow()
-	cs[2] = c.Orange()
-	cs[3] = c.Red()
-	cs[4] = c.Purple()
+	cs[0] = color.Green
+	cs[1] = color.Yellow
+	cs[2] = color.Orange
+	cs[3] = color.Red
+	cs[4] = color.Purple
 	return cs
 
 }
@@ -192,87 +190,90 @@ func testColors() []display.Color {
 // we'll need to run thru historical data and tune things
 // needs some test written to ensure we don't have misses/gaps
 // will refactor this out to a separate file
-func rain(intensity float64) display.Color {
+func rain(intensity float64) color.WCColor {
 
-	var c display.Color
-
+	// These ranges here could be defined more succinctly,
+	// but I find specifying both ends of a given range
+	// explicity to be more readable
 	switch {
-	case intensity < 0.01:
+	case intensity < 0.05:
 		{
-			return c.Black()
+			return color.Black
 		}
-	case intensity < 0.1:
+	case intensity >= 0.05 && intensity < 0.50:
 		{
-			return c.Green()
+			return color.Green
 		}
-	case intensity < 0.3:
+	case intensity >= 0.50 && intensity < 1.00:
 		{
-			return c.Yellow()
+			return color.Yellow
 		}
-	case intensity < 0.5:
+	case intensity >= 1.00 && intensity < 2.00:
 		{
-			return c.Orange()
+			return color.Orange
 		}
-	case intensity < 0.7:
+	case intensity >= 2.00 && intensity < 4.50:
 		{
-			return c.Red()
+			return color.Red
 		}
-	case intensity >= 0.7:
+	case intensity > 4.50:
 		{
-			return c.Purple()
+			return color.Purple
 		}
 	}
-	return c.Black()
+	return color.Black
 }
 
-func sleet(intensity float64) display.Color {
+func sleet(intensity float64) color.WCColor {
 
-	var c display.Color
-
+	// These ranges here could be defined more succinctly,
+	// but I find specifying both ends of a given range
+	// explicity to be more readable
 	switch {
-	case intensity < 0.01:
+	case intensity < 0.05:
 		{
-			return c.Black()
+			return color.Black
 		}
-	case intensity < 0.2:
+	case intensity >= 0.05 && intensity < 0.20:
 		{
-			return c.Pink()
+			return color.Pink
 		}
-	case intensity >= 0.2:
+	case intensity >= 0.20:
 		{
-			return c.Purple()
+			return color.Purple
 		}
 	}
-	return c.Black()
+	return color.Black
 }
 
-func snow(intensity float64) display.Color {
+func snow(intensity float64) color.WCColor {
 
-	var c display.Color
-
+	// These ranges here could be defined more succinctly,
+	// but I find specifying both ends of a given range
+	// explicity to be more readable
 	switch {
-	case intensity < 0.01:
+	case intensity < 0.05:
 		{
-			return c.Black()
+			return color.Black
 		}
-	case intensity < 0.3:
+	case intensity >= 0.05 && intensity < 0.30:
 		{
-			return c.LightBlue()
+			return color.LightBlue
 		}
-	case intensity < 0.6:
+	case intensity >= 0.30 && intensity < 0.60:
 		{
-			return c.DarkBlue()
+			return color.DarkBlue
 		}
-	case intensity >= 0.6:
+	case intensity >= 0.60:
 		{
-			return c.Purple()
+			return color.Purple
 		}
 	}
-	return c.Black()
+	return color.Black
 
 }
 
-func traceMapping(f darksky.ForecastResponse, cs []display.Color) {
+func traceMapping(f darksky.ForecastResponse, cs []color.WCColor) {
 
 	for i := 0; i < 60; i++ {
 		log.Tracef("%s i:%f p:%f- %d %d %d", f.Minutely.Data[i].PrecipType, f.Minutely.Data[i].PrecipIntensity, f.Minutely.Data[i].PrecipProbability,
@@ -280,9 +281,9 @@ func traceMapping(f darksky.ForecastResponse, cs []display.Color) {
 	}
 }
 
-func dim(c []display.Color, dimVal float32) []display.Color {
+func dim(c []color.WCColor, dimVal float32) []color.WCColor {
 
-	colors := make([]display.Color, 60)
+	colors := make([]color.WCColor, 60)
 
 	for i := 0; i < 60; i++ {
 
@@ -290,21 +291,20 @@ func dim(c []display.Color, dimVal float32) []display.Color {
 		g := uint8(float32(c[i].G) * dimVal)
 		b := uint8(float32(c[i].B) * dimVal)
 
-		colors[i] = display.Color{R: r, G: g, B: b}
+		colors[i] = color.WCColor{R: r, G: g, B: b}
 	}
 	return colors
 }
 
 // colors maps the forecast to colors
-func colors(f darksky.ForecastResponse) []display.Color {
+func colors(f darksky.ForecastResponse) []color.WCColor {
 
 	// tbd seem to be 61 items in Minutely, but...weird...need to understand better.
 	// I know I'll only have 60 LEDs to light, so...
-	colors := make([]display.Color, len(f.Minutely.Data))
+	colors := make([]color.WCColor, len(f.Minutely.Data))
 	// happy path first, but be aware...we cannot trust any data element(s) will be present at
 	// any point in time or the forecast
 	// we also might want to consider including probability in here?
-	var c display.Color
 	for idx, m := range f.Minutely.Data {
 		switch m.PrecipType {
 		case "rain":
@@ -321,7 +321,7 @@ func colors(f darksky.ForecastResponse) []display.Color {
 			}
 		default:
 			{
-				colors[idx] = c.Black()
+				colors[idx] = color.Black
 			}
 		}
 	}

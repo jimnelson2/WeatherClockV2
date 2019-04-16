@@ -3,12 +3,13 @@ package display
 import (
 	"time"
 
+	"github.com/jimnelson2/WeatherClockV2/pkg/color"
 	"github.com/kellydunn/go-opc"
 	log "github.com/sirupsen/logrus"
 )
 
 type Minutes struct {
-	Colors     []Color
+	Colors     []color.WCColor
 	PixelCount int
 }
 
@@ -26,12 +27,12 @@ func Run(c chan Minutes) {
 		log.Fatal("Could not connect to Fadecandy server", err)
 	}
 
-	m := Minutes{Colors: make([]Color, 60), PixelCount: 60}
+	m := Minutes{Colors: make([]color.WCColor, 60), PixelCount: 60}
 
 	// TODO: is this necessary?
 	// TODO: hard-coded
 	for i := 0; i < 60; i++ {
-		m.Colors[i] = Color{R: 0, G: 0, B: 0}
+		m.Colors[i] = color.WCColor{R: 0, G: 0, B: 0}
 	}
 
 	for {
