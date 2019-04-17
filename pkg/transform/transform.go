@@ -1,4 +1,6 @@
-package display
+// Package transform converts radar/weather data into
+// structures for display
+package transform
 
 import (
 	"github.com/jimnelson2/WeatherClockV2/pkg/color"

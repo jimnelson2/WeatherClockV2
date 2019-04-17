@@ -1,4 +1,6 @@
-package display
+// Package transform converts radar/weather data into
+// structures for display
+package transform
 
 import (
 	"github.com/jimnelson2/WeatherClockV2/pkg/color"
@@ -6,19 +8,18 @@ import (
 	"time"
 )
 
+// Pulse feeds the provided channel with a continual cycle
+// of color, fading between the provided base color and
+// black on a sinusoidal pattern, 100ms intervals
 func Pulse(c chan color.WCColor, base color.WCColor) {
-
-	// Given a base color representing the "MAX" amount of color,
-	// cotinually emit colors that vary between the base color
-	// and black following a sin wave pattern so the color
-	// appears to wash back and forth between base and
-	// black smoothly
 
 	cycle := 4 * math.Pi
 	var x, m float64
 	var scaledColor color.WCColor
 	x = 0
 	for {
+		// TODO: Understand this better. I think I'd prefer it
+		// to be more like "full cycle every N seconds"
 		x = math.Mod((x + math.Pi/60), cycle)
 		m = (math.Sin(x) + 1) / 2
 		// m is cycling between 0 and 1 in a sinusoidal wave

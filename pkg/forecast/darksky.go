@@ -1,3 +1,5 @@
+// Package forecast wraps and periodically calls
+// the darksky.io API
 package forecast
 
 import (

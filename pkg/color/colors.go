@@ -1,3 +1,4 @@
+// Package color defines RGB color values specific to weather radar
 package color
 
 // WCColor represented by RGB
