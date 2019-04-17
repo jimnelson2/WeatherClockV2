@@ -17,7 +17,7 @@ import (
 func main() {
 
 	// I like big mains. Cannot lie, etc. The idea that main sets up,
-	// instantiates, constructs, popluates...everything. And then
+	// instantiates, constructs, populates...everything. And then
 	// the things just go off and ... do their things.
 
 	// setup runtime variable source
@@ -116,7 +116,7 @@ func main() {
 	}()
 
 	// Block until a signal is received. Basically, run forever
-	// until the OS tells us to step
+	// until the OS tells us to stop. Thanks go-kit for the code.
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 	s := <-c
