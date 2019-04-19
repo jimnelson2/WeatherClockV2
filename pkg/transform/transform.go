@@ -8,28 +8,63 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// Transform define intensity boundary to color
+type Transform struct {
+	Intensity float64
+	Color     color.WCColor
+}
+
+// Transformer holds specific transformations and provides methods to use them
+type Transformer struct {
+	RainTransform  []Transform
+	SleetTransform []Transform
+	SnowTransform  []Transform
+}
+
+// NewTransformer returns a pointer to a transformer with default transforms
+func NewTransformer() *Transformer {
+	t := new(Transformer)
+	t.RainTransform = []Transform{
+		Transform{0.00, color.Black},
+		Transform{0.01, color.Green},
+		Transform{0.07, color.Yellow},
+		Transform{0.20, color.Orange},
+		Transform{1.00, color.Red},
+		Transform{2.00, color.Purple}}
+	t.SleetTransform = []Transform{
+		Transform{0.00, color.Black},
+		Transform{0.05, color.Pink},
+		Transform{0.20, color.Purple}}
+	t.SnowTransform = []Transform{
+		Transform{0.00, color.Black},
+		Transform{0.05, color.LightBlue},
+		Transform{0.30, color.DarkBlue},
+		Transform{0.60, color.Purple}}
+
+	return t
+}
+
 // ForecastToColor maps the forecast to display colors
-func ForecastToColor(f darksky.ForecastResponse) []color.WCColor {
+func (tr *Transformer) ForecastToColor(f darksky.ForecastResponse) []color.WCColor {
 
 	// tbd seem to be 61 items in Minutely, but...weird...need to understand better.
 	// I know I'll only have 60 LEDs to light, so...
 	colors := make([]color.WCColor, len(f.Minutely.Data))
-	// happy path first, but be aware...we cannot trust any data element(s) will be present at
-	// any point in time or the forecast
+
 	// we also might want to consider including probability in here?
 	for idx, m := range f.Minutely.Data {
 		switch m.PrecipType {
 		case "rain":
 			{
-				colors[idx] = rain(float64(m.PrecipIntensity))
+				colors[idx] = intensityToColor(float64(m.PrecipIntensity), tr.RainTransform)
 			}
 		case "sleet":
 			{
-				colors[idx] = sleet(float64(m.PrecipIntensity))
+				colors[idx] = intensityToColor(float64(m.PrecipIntensity), tr.SleetTransform)
 			}
 		case "snow":
 			{
-				colors[idx] = snow(float64(m.PrecipIntensity))
+				colors[idx] = intensityToColor(float64(m.PrecipIntensity), tr.SnowTransform)
 			}
 		default:
 			{
@@ -38,6 +73,19 @@ func ForecastToColor(f darksky.ForecastResponse) []color.WCColor {
 		}
 	}
 	return colors
+}
+
+func intensityToColor(intensity float64, t []Transform) color.WCColor {
+
+	var c = color.Black
+	for i := 0; i < len(t); i++ {
+		if intensity >= t[i].Intensity {
+			c = t[i].Color
+		} else {
+			break
+		}
+	}
+	return c
 }
 
 // Dim reduces each color value to product with dimVal
@@ -108,101 +156,6 @@ func testColors() []color.WCColor {
 	cs[3] = color.Red
 	cs[4] = color.Purple
 	return cs
-
-}
-
-// like...way beyond first try...
-// could imagine these cutoffs being changeable via
-// front-end sliders. yeah we have no front end yet.
-// but if we did how cool would that be
-
-// expecting that intensity-to-color mapping will vary by precip type
-// intensity is inches of liquid water per hour
-// cutoffs in the maps below are arbitrary at this point, I'd prefer to shift them
-// to the lower intensities just so things look more interesting.
-// we'll need to run thru historical data and tune things
-// needs some test written to ensure we don't have misses/gaps
-// will refactor this out to a separate file
-func rain(intensity float64) color.WCColor {
-
-	// These ranges here could be defined more succinctly,
-	// but I find specifying both ends of a given range
-	// explicity to be more readable
-	switch {
-	case intensity < 0.05:
-		{
-			return color.Black
-		}
-	case intensity >= 0.05 && intensity < 0.50:
-		{
-			return color.Green
-		}
-	case intensity >= 0.50 && intensity < 1.00:
-		{
-			return color.Yellow
-		}
-	case intensity >= 1.00 && intensity < 2.00:
-		{
-			return color.Orange
-		}
-	case intensity >= 2.00 && intensity < 4.50:
-		{
-			return color.Red
-		}
-	case intensity > 4.50:
-		{
-			return color.Purple
-		}
-	}
-	return color.Black
-}
-
-func sleet(intensity float64) color.WCColor {
-
-	// These ranges here could be defined more succinctly,
-	// but I find specifying both ends of a given range
-	// explicity to be more readable
-	switch {
-	case intensity < 0.05:
-		{
-			return color.Black
-		}
-	case intensity >= 0.05 && intensity < 0.20:
-		{
-			return color.Pink
-		}
-	case intensity >= 0.20:
-		{
-			return color.Purple
-		}
-	}
-	return color.Black
-}
-
-func snow(intensity float64) color.WCColor {
-
-	// These ranges here could be defined more succinctly,
-	// but I find specifying both ends of a given range
-	// explicity to be more readable
-	switch {
-	case intensity < 0.05:
-		{
-			return color.Black
-		}
-	case intensity >= 0.05 && intensity < 0.30:
-		{
-			return color.LightBlue
-		}
-	case intensity >= 0.30 && intensity < 0.60:
-		{
-			return color.DarkBlue
-		}
-	case intensity >= 0.60:
-		{
-			return color.Purple
-		}
-	}
-	return color.Black
 
 }
 

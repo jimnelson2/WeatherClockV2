@@ -48,7 +48,7 @@ func Run(c chan Pixels) {
 	for {
 		select {
 		case m = <-c:
-			log.Debug("Display got new message to process")
+			log.Trace("Display got new message to process")
 			log.Trace(m)
 		default:
 		}
@@ -68,7 +68,7 @@ func Run(c chan Pixels) {
 		if err != nil {
 			log.Error("didn't send color data to fadecandy board", err)
 		} else {
-			log.Debug("sent color to fadecandy board")
+			log.Trace("sent color to fadecandy board")
 		}
 
 		// TODO: hard-coded
