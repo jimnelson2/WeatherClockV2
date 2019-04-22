@@ -39,39 +39,37 @@ func Run(c chan Pixels) {
 
 	m := Pixels{Colors: make([]color.WCColor, 60), PixelCount: 60}
 
-	// We probably don't have pixel data yet. Default
-	// to all black
+	// We probably don't have pixel data yet. Default to all black
+	// do we need to do this?
 	for i := 0; i < PixelCount; i++ {
 		m.Colors[i] = color.Black
 	}
 
 	for {
+		log.Debug("Start display loop")
 		select {
 		case m = <-c:
-			log.Trace("Display got new message to process")
-			log.Trace(m)
+			msg := opc.NewMessage(0)
+
+			// reminder that each LED has 3 pixels, in r-g-b order
+			msg.SetLength(uint16(PixelCount * 3))
+
+			// Add all pixel data to the message
+			for i := 0; i < PixelCount; i++ {
+				// reminder this is effectively setting three pixel values at once
+				msg.SetPixelColor(i, m.Colors[i].R, m.Colors[i].G, m.Colors[i].B)
+			}
+
+			err = oc.Send(msg)
+			if err != nil {
+				log.Error("didn't send color data to fadecandy board", err)
+			} else {
+				log.Trace("sent color to fadecandy board")
+			}
+
 		default:
 		}
 
-		msg := opc.NewMessage(0)
-
-		// reminder that each LED has 3 pixels, in r-g-b order
-		msg.SetLength(uint16(PixelCount * 3))
-
-		// Add all pixel data to the message
-		for i := 0; i < PixelCount; i++ {
-			// reminder this is effectively setting three pixel values at once
-			msg.SetPixelColor(i, m.Colors[i].R, m.Colors[i].G, m.Colors[i].B)
-		}
-
-		err = oc.Send(msg)
-		if err != nil {
-			log.Error("didn't send color data to fadecandy board", err)
-		} else {
-			log.Trace("sent color to fadecandy board")
-		}
-
-		// TODO: hard-coded
 		time.Sleep(time.Duration(100) * time.Millisecond)
 	}
 }

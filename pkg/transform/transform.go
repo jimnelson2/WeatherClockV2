@@ -8,13 +8,13 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// Transform define intensity boundary to color
+// Transform defines the minimal intensity at which a precipication intensity takes effect
 type Transform struct {
 	Intensity float64
 	Color     color.WCColor
 }
 
-// Transformer holds specific transformations and provides methods to use them
+// Transformer holds slices of precipitation-type specific transformations
 type Transformer struct {
 	RainTransform  []Transform
 	SleetTransform []Transform
@@ -47,45 +47,104 @@ func NewTransformer() *Transformer {
 // ForecastToColor maps the forecast to display colors
 func (tr *Transformer) ForecastToColor(f darksky.ForecastResponse) []color.WCColor {
 
-	// tbd seem to be 61 items in Minutely, but...weird...need to understand better.
-	// I know I'll only have 60 LEDs to light, so...
-	colors := make([]color.WCColor, len(f.Minutely.Data))
+	colors := make([]color.WCColor, 60)
+
+	// I...don't know if I like this
+	if len(f.Minutely.Data) != 61 {
+		log.Errorf("Asked to transform a forecast with %d minutes. Expected 61", len(f.Minutely.Data))
+		return color.NewColors(60)
+	}
 
 	// we also might want to consider including probability in here?
 	for idx, m := range f.Minutely.Data {
-		switch m.PrecipType {
-		case "rain":
-			{
-				colors[idx] = intensityToColor(float64(m.PrecipIntensity), tr.RainTransform)
-			}
-		case "sleet":
-			{
-				colors[idx] = intensityToColor(float64(m.PrecipIntensity), tr.SleetTransform)
-			}
-		case "snow":
-			{
-				colors[idx] = intensityToColor(float64(m.PrecipIntensity), tr.SnowTransform)
-			}
-		default:
-			{
-				colors[idx] = color.Black
+		if idx < 60 {
+			switch m.PrecipType {
+			case "rain":
+				{
+					colors[idx] = intensityToColor(float64(m.PrecipIntensity), tr.RainTransform)
+				}
+			case "sleet":
+				{
+					colors[idx] = intensityToColor(float64(m.PrecipIntensity), tr.SleetTransform)
+				}
+			case "snow":
+				{
+					colors[idx] = intensityToColor(float64(m.PrecipIntensity), tr.SnowTransform)
+				}
+			default:
+				{
+					colors[idx] = color.Black
+				}
 			}
 		}
 	}
 	return colors
 }
 
-func intensityToColor(intensity float64, t []Transform) color.WCColor {
+// ApplyTransformDefinition modifies the transform based on the provided change string
+func (tr *Transformer) ApplyTransformDefinition(change string) {
 
-	var c = color.Black
-	for i := 0; i < len(t); i++ {
-		if intensity >= t[i].Intensity {
-			c = t[i].Color
-		} else {
-			break
+	// This feels yucky...not sure how to make it better yet...
+	// The very worst of this is you can't keyboard-close the process :/
+
+	// Here's the idea. We have a default transform that defines the various
+	// intensities at which color changes. I want to provide the ability to
+	// modify the intensity levels at which a transition occurs. Imagine
+	// that we have slider controls on a ruler - one slider to demark a
+	// transition between two colors. Let the transitions move around, but
+	// don't let sliders pass each other. That's what the below code does.
+	// lower-case letters move a slider to a lower value, upper-case moves
+	// the slider higher. We go alphabetically. For example:
+	// "a" moves the transition between no color and the first color for rain 0.005 lower
+	// "A" moves the transition between no color and the first color for rain 0.005 higher, but not higher than the next transition
+	// and so on. "b/B" is the second transition, etc. up through "e/E"
+	// We follow the same pattern for the other precipitation types
+	// The purpose for this is to help tune the transitions in an interactive way...and when we
+	// reach a set of transitions that we like...we'll take them and hard-code them as the defaults
+
+	// Also...I've only addressed rain here...
+	switch change {
+	case "a":
+		if tr.RainTransform[1].Intensity > tr.RainTransform[0].Intensity {
+			tr.RainTransform[1].Intensity = tr.RainTransform[1].Intensity - 0.005
 		}
+	case "A":
+		if tr.RainTransform[1].Intensity < tr.RainTransform[2].Intensity {
+			tr.RainTransform[1].Intensity = tr.RainTransform[1].Intensity + 0.005
+		}
+	case "b":
+		if tr.RainTransform[2].Intensity > tr.RainTransform[1].Intensity {
+			tr.RainTransform[2].Intensity = tr.RainTransform[2].Intensity - 0.005
+		}
+	case "B":
+		if tr.RainTransform[2].Intensity < tr.RainTransform[3].Intensity {
+			tr.RainTransform[2].Intensity = tr.RainTransform[2].Intensity + 0.005
+		}
+	case "c":
+		if tr.RainTransform[3].Intensity > tr.RainTransform[2].Intensity {
+			tr.RainTransform[3].Intensity = tr.RainTransform[3].Intensity - 0.005
+		}
+	case "C":
+		if tr.RainTransform[3].Intensity < tr.RainTransform[4].Intensity {
+			tr.RainTransform[3].Intensity = tr.RainTransform[3].Intensity + 0.005
+		}
+	case "d":
+		if tr.RainTransform[4].Intensity > tr.RainTransform[3].Intensity {
+			tr.RainTransform[4].Intensity = tr.RainTransform[4].Intensity - 0.005
+		}
+	case "D":
+		if tr.RainTransform[4].Intensity < tr.RainTransform[5].Intensity {
+			tr.RainTransform[4].Intensity = tr.RainTransform[4].Intensity + 0.005
+		}
+	case "e":
+		if tr.RainTransform[5].Intensity > tr.RainTransform[4].Intensity {
+			tr.RainTransform[5].Intensity = tr.RainTransform[5].Intensity - 0.005
+		}
+	case "E":
+		tr.RainTransform[5].Intensity = tr.RainTransform[4].Intensity + 0.005
+	default:
 	}
-	return c
+
 }
 
 // Dim reduces each color value to product with dimVal
@@ -144,19 +203,17 @@ func AllSameColors(c color.WCColor) []color.WCColor {
 	return cs
 }
 
-func testColors() []color.WCColor {
-	cs := make([]color.WCColor, 60)
-	for i := 0; i < 60; i++ {
-		cs[i] = color.Black
+func intensityToColor(intensity float64, t []Transform) color.WCColor {
+
+	var c = color.Black
+	for i := 0; i < len(t); i++ {
+		if intensity >= t[i].Intensity {
+			c = t[i].Color
+		} else {
+			break
+		}
 	}
-
-	cs[0] = color.Green
-	cs[1] = color.Yellow
-	cs[2] = color.Orange
-	cs[3] = color.Red
-	cs[4] = color.Purple
-	return cs
-
+	return c
 }
 
 func traceMapping(f darksky.ForecastResponse, cs []color.WCColor) {

@@ -18,3 +18,14 @@ var (
 	Red       = WCColor{R: 255, G: 0, B: 0}
 	Yellow    = WCColor{R: 255, G: 255, B: 0}
 )
+
+// NewColors initializes a new color slice
+func NewColors(cnt int) []WCColor {
+
+	c := make([]WCColor, cnt)
+	for i := 0; i < cnt; i++ {
+		c[i] = Black
+	}
+
+	return c
+}

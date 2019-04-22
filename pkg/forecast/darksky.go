@@ -20,6 +20,7 @@ type DarkskyConfig struct {
 // Run calls the darksky.io service forever
 func Run(c chan darksky.ForecastResponse, dsc DarkskyConfig) {
 	for {
+		log.Debug("Start darksky loop")
 		log.Debug("Calling darksky.io")
 		client := darksky.New(dsc.DarkskyToken)
 		request := darksky.ForecastRequest{}
