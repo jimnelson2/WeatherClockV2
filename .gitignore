@@ -17,3 +17,5 @@ debug
 
 # Config files and binaries
 wc.json
+wc-pi
+weatherclock

@@ -7,7 +7,7 @@ Same, but better. This time with a raspberry pi and Go
 
 ### Build for the pi
 
-```env GOOS=linux GOARCH=arm GOARM=5 go build -o wc-pi ./cmd/weatherclock/weatherclock.go ```
+```env GOOS=linux GOARCH=arm GOARM=5 go build -o wc-pi ./cmd/weatherclock/weatherclock.go```
 
 ### Install on pi w
 
@@ -79,3 +79,36 @@ Same, but better. This time with a raspberry pi and Go
     systemctl start fcserver.service
     systemctl start weatherclock.service
     ```
+
+
+### notes
+
+Main loop run every 5 seconds
+One of t
+* get forecast colors
+
+    "LATITUDE": 39.6000,
+    "LONGITUDE": -86.0942,
+
+
+
+
+## Refactor ideas
+
+* package forecast - ok, leave it alone
+  * calls external API, returns forecast
+  * could maybe abstract the returned forecast into a struct that isn't unique to darksky...but...why?
+* package transform 
+  * maybe rename to translate? 
+  * we can delete alertpulse, right? doesn't fadecandy handle this for us?
+
+why does this *feel* so messy? something isn't right.
+  * review for the general mantra of pass in interfaces, return structs
+  * what are our abstractions?
+    * A display
+    * A forecast
+    * given that...what else do we need beyond helpers to translate?
+
+
+
+https://api.darksky.net/forecast/b43f0e29f241b256f2b9f82a4fc3b917/39.6000,-86.0942

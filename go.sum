@@ -12,6 +12,8 @@ github.com/google/go-querystring v1.0.0 h1:Xkwi/a1rcvNg1PPYe5vI8GbeBY/jrVuDX5ASu
 github.com/google/go-querystring v1.0.0/go.mod h1:odCYkC5MyYFN7vkCjXpyrEuKhc/BUO6wN/zVPAxq5ck=
 github.com/hashicorp/hcl v1.0.0 h1:0Anlzjpi4vEasTeNFn2mLJgTSwt0+6sfsiTG8qcWGx4=
 github.com/hashicorp/hcl v1.0.0/go.mod h1:E5yfLk+7swimpb2L/Alb/PJmXilQ/rhwaUYs4T20WEQ=
+github.com/jimnelson2/tsl2591 v0.0.0-20200221224545-cf8e55b92d59 h1:crCGthRI2zezg239B/g8rb+8KeRQpo5LtsX+Pc9LqrY=
+github.com/jimnelson2/tsl2591 v0.0.0-20200221224545-cf8e55b92d59/go.mod h1:AFGFiJwxdOSynimzwQPOuqdRT5IXnKmj5mLxpMylvy8=
 github.com/kellydunn/go-opc v0.1.0 h1:OaLL1nAszyXscoyYGY6P11QskMAHq8vzjgbGutN9x/c=
 github.com/kellydunn/go-opc v0.1.0/go.mod h1:1ji4srxPhzrfFGvPLz3OjtGhRFP7blDQdyjdfyGuPmQ=
 github.com/konsorten/go-windows-terminal-sequences v1.0.1 h1:mweAR1A6xJ3oS2pRaGiHgQ4OO8tzTaLawm8vnODuwDk=
@@ -52,11 +54,13 @@ golang.org/x/crypto v0.0.0-20181203042331-505ab145d0a9/go.mod h1:6SG95UA2DQfeDnf
 golang.org/x/sys v0.0.0-20180905080454-ebe1bf3edb33/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
 golang.org/x/sys v0.0.0-20181205085412-a5c9d58dba9a h1:1n5lsVfiQW3yfsRGu98756EH1YthsFqr/5mxHduZW2A=
 golang.org/x/sys v0.0.0-20181205085412-a5c9d58dba9a/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
-golang.org/x/sys v0.0.0-20181217223516-dcdaa6325bcb h1:zzdd4xkMwu/GRxhSUJaCPh4/jil9kAbsU7AUmXboO+A=
-golang.org/x/sys v0.0.0-20181217223516-dcdaa6325bcb/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
+golang.org/x/sys v0.0.0-20191001151750-bb3f8db39f24 h1:R8bzl0244nw47n1xKs1MUMAaTNgjavKcN/aX2Ss3+Fo=
+golang.org/x/sys v0.0.0-20191001151750-bb3f8db39f24/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/text v0.3.0 h1:g61tztE5qeGQ89tm6NTjjM9VPIm088od1l6aSorWRWg=
 golang.org/x/text v0.3.0/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405 h1:yhCVgyC4o1eVCa2tZl7eS0r+SDo693bJlVdllGtEeKM=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/yaml.v2 v2.2.2 h1:ZCJp+EgiOT7lHqUV2J862kp8Qj64Jo6az82+3Td9dZw=
 gopkg.in/yaml.v2 v2.2.2/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
+periph.io/x/periph v3.6.2+incompatible h1:B9vqhYVuhKtr6bXua8N9GeBEvD7yanczCvE0wU2LEqw=
+periph.io/x/periph v3.6.2+incompatible/go.mod h1:EWr+FCIU2dBWz5/wSWeiIUJTriYv9v2j2ENBmgYyy7Y=

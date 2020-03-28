@@ -2,15 +2,17 @@
 package main
 
 import (
+	"math"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/jimnelson2/WeatherClockV2/pkg/color"
 	"github.com/jimnelson2/WeatherClockV2/pkg/display"
 	"github.com/jimnelson2/WeatherClockV2/pkg/forecast"
-	//"github.com/jimnelson2/WeatherClockV2/pkg/io"
 	"github.com/jimnelson2/WeatherClockV2/pkg/transform"
+	"github.com/jimnelson2/tsl2591"
 	"github.com/shawntoffel/darksky"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -53,6 +55,24 @@ func main() {
 		default:
 			log.SetLevel(log.DebugLevel)
 		}
+
+		file, err := os.OpenFile("/tmp/wc.log", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666)
+		if err != nil {
+			panic(err)
+		}
+		defer file.Close()
+		log.SetOutput(file)
+
+	}
+
+	// setup light sensor
+	log.Info("setting up light sensor")
+	tsl, err := tsl2591.NewTSL2591(&tsl2591.Opts{
+		Gain:   tsl2591.GainMed,
+		Timing: tsl2591.Integrationtime600MS,
+	})
+	if err != nil {
+		log.Error(err.Error)
 	}
 
 	// configure darksky with all it needs to call the api
@@ -88,65 +108,64 @@ func main() {
 
 	// setup routines that will run forever
 	darkskyChannel := make(chan darksky.ForecastResponse)
-	forecastColorChannel := make(chan []color.WCColor)
-	pulsedColorChannel := make(chan []color.WCColor)
 	displayChannel := make(chan display.Pixels)
 	{
 		// receive forecast data from darksky
 		go forecast.Run(darkskyChannel, dsc)
 
-		// support the ability to pulse the normal display if weather alerts exist.
-		// instantiates a base alert color and the current forecast, continuously
-		// receives colors that vary between the two...through a black midpoint
-		go transform.Pulse(color.Red, forecastColorChannel, pulsedColorChannel)
-
 		// send colors for display
 		go display.Run(displayChannel)
 
-		//keypressChannel := make(chan string)
-		//go io.GetKeys(keypressChannel)
 	}
 
-	// loop forever, receving/sending data across channels
-	alerting := false
-
-	//TODO JIM YOU ARE HERE - WE NEED TO DECIDE IF WE ARE ALERTING
-	//BASED ON THE INCOMING FORECAST...NOT BASED ON THE HARDCODING
-	//WE HAVE RIGHT NOW
 	go func() {
-		lastForecastColors := color.NewColors(60)
-		lastAlertColors := color.NewColors(60)
-		displayColors := color.NewColors(60)
+		forecastColors := make([]color.WCColor, 60)
+		displayColors := make([]color.WCColor, 60)
+		alertColors := make([]color.WCColor, 60)
 		tr := transform.NewTransformer()
+		var alertOn = false
+		var alertToggle = false
 		for {
-			log.Debug("start main loop")
 			select {
-			//case msg0 := <-keypressChannel:
-			//	log.Debugf("keypress: %s", msg0)
-			//	tr.ApplyTransformDefinition(msg0)
-			//	log.Debugf("new transfrom is %v", tr.RainTransform)
-			//	cs1 := tr.ForecastToColor(lastForecast)
-			//	lastForecastColors = cs1
-			//	forecastColorChannel <- cs1
 			case darkskyForecast := <-darkskyChannel:
-				lastForecastColors = tr.ForecastToColor(darkskyForecast)
-				//forecastColorChannel <- lastForecastColors
-			case alertColors := <-pulsedColorChannel:
-				lastAlertColors = alertColors
+				forecastColors = tr.ForecastToColor(darkskyForecast)
+				alertOn, alertColors = tr.ForecastToAlert(darkskyForecast)
 			default:
 			}
 
-			if alerting {
-				displayColors = lastAlertColors
+			// get light sensor
+			lux, _ := tsl.Lux()
+
+			// Just display the forecast colors if there's no alerting
+			// However, if there is alerting we want to toggle between
+			// the forecast colors and alert colors
+			if !alertOn {
+				log.Info("not alerting - display forecast colors")
+				displayColors = forecastColors
 			} else {
-				displayColors = lastForecastColors
+				if alertOn && alertToggle {
+					log.Info("alerting - display alert colors")
+					alertToggle = false
+					displayColors = alertColors
+				} else {
+					log.Info("alerting - display forecast colors")
+					alertToggle = true
+					displayColors = forecastColors
+				}
 			}
 
-			if len(displayColors) == 60 {
-				displayColors = transform.Dim(displayColors, 0.3)
-				m := display.Pixels{Colors: displayColors, PixelCount: 60}
-				displayChannel <- m
+			// dim lights relative to brightness
+			if math.IsNaN(lux) {
+				log.Info("got NaN from lux sensor, defaulting lux to 5")
+				lux = 5.0 // so...icky. defult lux value if we aren't getting one from our sensor
 			}
+
+			// overlay current time on top of colors
+			displayColors = tr.OverlayColors(displayColors, tr.ClockFace())
+			displayChannel <- display.Pixels{Colors: transform.Dim(displayColors, transform.LuxToDim(lux)), PixelCount: 60}
+
+			// sleep 5 seconds
+			time.Sleep(time.Duration(5000) * time.Millisecond)
 		}
 	}()
 

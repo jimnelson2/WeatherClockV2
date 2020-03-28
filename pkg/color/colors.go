@@ -17,6 +17,7 @@ var (
 	Purple    = WCColor{R: 127, G: 0, B: 255}
 	Red       = WCColor{R: 255, G: 0, B: 0}
 	Yellow    = WCColor{R: 255, G: 255, B: 0}
+	White     = WCColor{R: 255, G: 255, B: 255}
 )
 
 // NewColors initializes a new color slice

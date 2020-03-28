@@ -3,12 +3,15 @@
 package transform
 
 import (
+	"strings"
+	"time"
+
 	"github.com/jimnelson2/WeatherClockV2/pkg/color"
 	"github.com/shawntoffel/darksky"
 	log "github.com/sirupsen/logrus"
 )
 
-// Transform defines the minimal intensity at which a precipication intensity takes effect
+// Transform defines the minimal intensity at which a precipitation intensity takes effect
 type Transform struct {
 	Intensity float64
 	Color     color.WCColor
@@ -40,8 +43,54 @@ func NewTransformer() *Transformer {
 		Transform{0.05, color.LightBlue},
 		Transform{0.30, color.DarkBlue},
 		Transform{0.60, color.Purple}}
-
 	return t
+}
+
+// ClockFace returns a clock face for current time
+func (tr *Transformer) ClockFace() []color.WCColor {
+
+	var c = AllSameColors(color.Black)
+
+	t := time.Now().Local()
+	h := t.Hour()
+	m := t.Minute()
+
+	// Light up the "hour"
+	c[((h%12)*5)%60] = color.White
+
+	// Light up the minutes (incl +/- 1)
+	c[(m+59)%60] = color.White
+	c[m] = color.White
+	c[(m+1)%60] = color.White
+
+	return c
+}
+
+// ForecastToAlert determines if an alert is active, and if so what color to represent
+func (tr *Transformer) ForecastToAlert(f darksky.ForecastResponse) (active bool, c []color.WCColor) {
+
+	c = make([]color.WCColor, 60)
+	active = false
+
+	// Detection of active alert is really not good here
+	// should almost certainly be accounting for expires time, etc.
+	for _, a := range f.Alerts {
+		if a.Severity == "warning" {
+			if strings.Contains(strings.ToLower(a.Title), "tornado warning") {
+				c = AllSameColors(color.Red)
+				active = true
+				log.Info("Tornado warning active")
+				return active, c
+			}
+			if strings.Contains(strings.ToLower(a.Title), "thunderstorm warning") {
+				c = AllSameColors(color.Yellow)
+				active = true
+				log.Info("Thunderstorm warning active")
+			}
+		}
+	}
+
+	return active, c
 }
 
 // ForecastToColor maps the forecast to display colors
@@ -164,13 +213,13 @@ func Dim(c []color.WCColor, dimVal float32) []color.WCColor {
 }
 
 // OverlayColors adds the supplied colors together
-func OverlayColors(fc []color.WCColor, ac []color.WCColor) []color.WCColor {
+func (tr *Transformer) OverlayColors(fc []color.WCColor, ac []color.WCColor) []color.WCColor {
 
-	// not really sure what I want to see. For now...we're just gonna add 'em up
 	cs := make([]color.WCColor, 60)
 	var r, g, b uint
 	for i := 0; i < 60; i++ {
 
+		// this would "add" the colors together, dumbly
 		r = uint(fc[i].R + ac[i].R)
 		g = uint(fc[i].G + ac[i].G)
 		b = uint(fc[i].B + ac[i].B)
@@ -190,8 +239,7 @@ func OverlayColors(fc []color.WCColor, ac []color.WCColor) []color.WCColor {
 		cs[i].B = uint8(b)
 	}
 
-	//return cs  ignore what we're doing here for now
-	return fc
+	return cs
 }
 
 // AllSameColors returns an array of all the same color
@@ -201,6 +249,42 @@ func AllSameColors(c color.WCColor) []color.WCColor {
 		cs[i] = c
 	}
 	return cs
+}
+
+// LuxToDim converts a lux value to a 0-100 dim percentage. Hard-coded range.
+func LuxToDim(lux float64) float32 {
+
+	var maxLux, minLux float64
+	maxLux = 75
+	minLux = 0.01
+
+	var maxDim, minDim float64
+	maxDim = 0.9
+	minDim = 0.1
+
+	// we want our lights to be not-to-dark, not-to-bright.
+	// we have a sensor reporting ambient light in lux
+	// so use that lux value to control how much to
+	// dim the lights. we're capping all ranges, might
+	// take some experimentation
+
+	if lux > maxLux {
+		log.Infof("override lux of %f to %f", lux, maxLux)
+		lux = maxLux
+	}
+	if lux < minLux {
+		log.Infof("override lux of %f to %f", lux, minLux)
+		lux = minLux
+	}
+
+	// linear transform
+	// if x falls b/w a and b, create y falling between c and d
+	// y := (x-a)/(b-a) * (d-c) + c
+	dim := (lux-minLux)/(maxLux-minLux)*(maxDim-minDim) + minDim
+
+	log.Infof("given lux %f, will dim to %f of max", lux, dim)
+	return float32(dim)
+
 }
 
 func intensityToColor(intensity float64, t []Transform) color.WCColor {

@@ -31,7 +31,7 @@ func Run(c chan Pixels) {
 	// going to bother for my use case? No.
 	err := oc.Connect("tcp", "localhost:7890")
 
-	// Significant assumption, maore of an assertion, really. The fadecandy
+	// Significant assumption, more of an assertion, really. The fadecandy
 	// server is required to be available to us immediately.
 	if err != nil {
 		log.Fatal("Could not connect to Fadecandy server", err)
@@ -46,7 +46,6 @@ func Run(c chan Pixels) {
 	}
 
 	for {
-		log.Debug("Start display loop")
 		select {
 		case m = <-c:
 			msg := opc.NewMessage(0)
@@ -70,6 +69,6 @@ func Run(c chan Pixels) {
 		default:
 		}
 
-		time.Sleep(time.Duration(100) * time.Millisecond)
+		time.Sleep(time.Duration(5000) * time.Millisecond)
 	}
 }
