@@ -55,13 +55,14 @@ func (tr *Transformer) ClockFace() []color.WCColor {
 	h := t.Hour()
 	m := t.Minute()
 
-	// Light up the "hour"
-	c[((h%12)*5)%60] = color.White
-
-	// Light up the minutes (incl +/- 1)
-	c[(m+59)%60] = color.White
+	// Light up the minute
 	c[m] = color.White
-	c[(m+1)%60] = color.White
+
+	// Light up the hour as a block of 3 pixels
+	offset := m / 12                           // moves the center as hour progresses
+	c[(((h%12)*5)+offset+59)%60] = color.White // center - 1
+	c[(((h%12)*5)+offset)%60] = color.White    // center
+	c[(((h%12)*5)+offset+1)%60] = color.White  // center + 1
 
 	return c
 }
@@ -260,7 +261,7 @@ func LuxToDim(lux float64) float32 {
 
 	var maxDim, minDim float64
 	maxDim = 0.9
-	minDim = 0.1
+	minDim = 0.3
 
 	// we want our lights to be not-to-dark, not-to-bright.
 	// we have a sensor reporting ambient light in lux
